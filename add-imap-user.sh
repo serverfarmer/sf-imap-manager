@@ -4,7 +4,7 @@
 # create IMAP/fetchmail account:
 # - first on local management server (to preserve UID)
 # - then on specified mail server (sf-imap-server extension required)
-# - last on specified backup server
+# - last on specified backup server (if not the same)
 # Tomasz Klim, 2014-2016
 
 
@@ -37,6 +37,8 @@ if [ $uid -lt 0 ]; then
 fi
 
 mailserver=$2
+backupserver=$3
+
 if [ -z "${mailserver##*:*}" ]; then
 	mailhost="${mailserver%:*}"
 	mailport="${mailserver##*:}"
@@ -45,8 +47,7 @@ else
 	mailport=22
 fi
 
-if [ "$3" != "" ] && [ "$3" != "$2" ]; then
-	backupserver=$3
+if [ "$backupserver" != "" ] && [ "$backupserver" != "$mailserver" ]; then
 
 	if ! [[ $backupserver =~ ^[a-z0-9.-]+[.][a-z0-9]+([:][0-9]+)?$ ]]; then
 		echo "error: parameter 3 not conforming host name format"
@@ -92,8 +93,8 @@ ssh -i $mailkey -p $mailport root@$mailhost "useradd -u $uid -d $path -M -g imap
 ssh -i $mailkey -p $mailport root@$mailhost "echo \"# */5 * * * * imap-$1 /opt/farm/ext/imap-server/cron/fetchmail.sh imap-$1 $1\" >>/etc/crontab"
 ssh -i $mailkey -p $mailport root@$mailhost "passwd imap-$1"
 
-if [ "$3" != "" ] && [ "$3" != "$2" ]; then
+if [ "$backupserver" != "" ] && [ "$backupserver" != "$mailserver" ]; then
 	backupkey=`ssh_management_key_storage_filename $backuphost`
-	rsync -e "ssh -i $backupkey -p $backupport" -av $path root@$backuphost:/srv/imap
 	ssh -i $backupkey -p $backupport root@$backuphost "useradd -u $uid -d $path -M -g imapusers -s /bin/false imap-$1"
+	rsync -e "ssh -i $backupkey -p $backupport" -av $path root@$backuphost:/srv/imap
 fi
