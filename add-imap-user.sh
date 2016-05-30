@@ -36,33 +36,33 @@ if [ $uid -lt 0 ]; then
 	exit 1
 fi
 
-rserver=$2
-if [ -z "${rserver##*:*}" ]; then
-	rhost="${rserver%:*}"
-	rport="${rserver##*:}"
+mailserver=$2
+if [ -z "${mailserver##*:*}" ]; then
+	mailhost="${mailserver%:*}"
+	mailport="${mailserver##*:}"
 else
-	rhost=$rserver
-	rport=22
+	mailhost=$mailserver
+	mailport=22
 fi
 
 if [ "$3" != "" ] && [ "$3" != "$2" ]; then
-	bserver=$3
+	backupserver=$3
 
-	if ! [[ $bserver =~ ^[a-z0-9.-]+[.][a-z0-9]+([:][0-9]+)?$ ]]; then
+	if ! [[ $backupserver =~ ^[a-z0-9.-]+[.][a-z0-9]+([:][0-9]+)?$ ]]; then
 		echo "error: parameter 3 not conforming host name format"
 		exit 1
 	fi
 
-	if [ -z "${bserver##*:*}" ]; then
-		bhost="${bserver%:*}"
-		bport="${bserver##*:}"
+	if [ -z "${backupserver##*:*}" ]; then
+		backuphost="${backupserver%:*}"
+		backupport="${backupserver##*:}"
 	else
-		bhost=$bserver
-		bport=22
+		backuphost=$backupserver
+		backupport=22
 	fi
 
-	if [ "`getent hosts $bhost`" = "" ]; then
-		echo "error: host $bhost not found"
+	if [ "`getent hosts $backuphost`" = "" ]; then
+		echo "error: host $backuphost not found"
 		exit 1
 	fi
 fi
@@ -86,14 +86,14 @@ chmod 0600 $path/.fetchmailrc $path/.uidl
 rm $path/.bash_logout $path/.bashrc $path/.profile
 chown -R imap-$1:imapusers $path
 
-rkey=`ssh_management_key_storage_filename $rhost`
-rsync -e "ssh -i $rkey -p $rport" -av $path root@$rhost:/srv/imap
-ssh -i $rkey -p $rport root@$rhost "useradd -u $uid -d $path -M -g imapusers -G www-data -s /bin/false imap-$1"
-ssh -i $rkey -p $rport root@$rhost "echo \"# */5 * * * * imap-$1 /opt/farm/ext/imap-server/cron/fetchmail.sh imap-$1 $1\" >>/etc/crontab"
-ssh -i $rkey -p $rport root@$rhost "passwd imap-$1"
+mailkey=`ssh_management_key_storage_filename $mailhost`
+rsync -e "ssh -i $mailkey -p $mailport" -av $path root@$mailhost:/srv/imap
+ssh -i $mailkey -p $mailport root@$mailhost "useradd -u $uid -d $path -M -g imapusers -G www-data -s /bin/false imap-$1"
+ssh -i $mailkey -p $mailport root@$mailhost "echo \"# */5 * * * * imap-$1 /opt/farm/ext/imap-server/cron/fetchmail.sh imap-$1 $1\" >>/etc/crontab"
+ssh -i $mailkey -p $mailport root@$mailhost "passwd imap-$1"
 
 if [ "$3" != "" ] && [ "$3" != "$2" ]; then
-	bkey=`ssh_management_key_storage_filename $bhost`
-	rsync -e "ssh -i $bkey -p $bport" -av $path root@$bhost:/srv/imap
-	ssh -i $bkey -p $bport root@$bhost "useradd -u $uid -d $path -M -g imapusers -s /bin/false imap-$1"
+	backupkey=`ssh_management_key_storage_filename $backuphost`
+	rsync -e "ssh -i $backupkey -p $backupport" -av $path root@$backuphost:/srv/imap
+	ssh -i $backupkey -p $backupport root@$backuphost "useradd -u $uid -d $path -M -g imapusers -s /bin/false imap-$1"
 fi
