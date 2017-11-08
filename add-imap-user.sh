@@ -1,5 +1,6 @@
 #!/bin/bash
 . /opt/farm/scripts/functions.uid
+. /opt/farm/scripts/functions.net
 . /opt/farm/scripts/functions.custom
 . /opt/farm/scripts/functions.keys
 # create IMAP/fetchmail account:
@@ -13,8 +14,6 @@ MINUID=1400
 MAXUID=1599
 
 
-type=`/opt/farm/scripts/config/detect-hostname-type.sh $2`
-
 if [ "$2" = "" ]; then
 	echo "usage: $0 <user> <mail-server[:port]> [backup-server[:port]]"
 	exit 1
@@ -24,7 +23,7 @@ elif ! [[ $1 =~ ^[a-z0-9]+$ ]]; then
 elif [ -d /srv/imap/$1 ]; then
 	echo "error: user $1 exists"
 	exit 1
-elif [ "$type" != "hostname" ] && [ "$type" != "ip" ]; then
+elif [ "`resolve_host $2`" = "" ]; then
 	echo "error: parameter $2 not conforming hostname format, or given hostname is invalid"
 	exit 1
 fi
@@ -48,9 +47,7 @@ else
 fi
 
 if [ "$backupserver" != "" ] && [ "$backupserver" != "$mailserver" ]; then
-	type=`/opt/farm/scripts/config/detect-hostname-type.sh $backupserver`
-
-	if [ "$type" != "hostname" ] && [ "$type" != "ip" ]; then
+	if [ "`resolve_host $backupserver`" = "" ]; then
 		echo "error: parameter $3 not conforming hostname format, or given hostname is invalid"
 		exit 1
 	fi
