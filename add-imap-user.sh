@@ -2,7 +2,7 @@
 . /opt/farm/scripts/functions.uid
 . /opt/farm/scripts/functions.net
 . /opt/farm/scripts/functions.custom
-. /opt/farm/scripts/functions.keys
+. /opt/farm/ext/keys/functions
 # create IMAP/fetchmail account:
 # - first on local management server (to preserve UID)
 # - then on specified mail server (sf-imap-server extension required)
