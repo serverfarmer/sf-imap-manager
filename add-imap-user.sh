@@ -1,8 +1,6 @@
 #!/bin/bash
-. /opt/farm/scripts/functions.custom
 . /opt/farm/ext/passwd-utils/functions
 . /opt/farm/ext/net-utils/functions
-. /opt/farm/ext/keys/functions
 # create IMAP/fetchmail account:
 # - first on local management server (to preserve UID)
 # - then on specified mail server (sf-imap-server extension required)
@@ -80,14 +78,14 @@ chmod 0600 $path/.fetchmailrc $path/.uidl
 rm $path/.bash_logout $path/.bashrc $path/.profile
 chown -R imap-$1:imapusers $path
 
-mailkey=`ssh_management_key_storage_filename $mailhost`
+mailkey=`/opt/farm/ext/keys/get-ssh-management-key.sh $mailhost`
 rsync -e "ssh -i $mailkey -p $mailport" -av $path root@$mailhost:/srv/imap
 ssh -i $mailkey -p $mailport root@$mailhost "useradd -u $uid -d $path -M -g imapusers -G www-data -s /bin/false imap-$1"
 ssh -i $mailkey -p $mailport root@$mailhost "echo \"# */5 * * * * imap-$1 /opt/farm/ext/imap-server/cron/fetchmail.sh imap-$1 $1\" >>/etc/crontab"
 ssh -i $mailkey -p $mailport root@$mailhost "passwd imap-$1"
 
 if [ "$backupserver" != "" ] && [ "$backupserver" != "$mailserver" ]; then
-	backupkey=`ssh_management_key_storage_filename $backuphost`
+	backupkey=`/opt/farm/ext/keys/get-ssh-management-key.sh $backuphost`
 	ssh -i $backupkey -p $backupport root@$backuphost "useradd -u $uid -d $path -M -g imapusers -s /bin/false imap-$1"
 	rsync -e "ssh -i $backupkey -p $backupport" -av $path root@$backuphost:/srv/imap
 fi
